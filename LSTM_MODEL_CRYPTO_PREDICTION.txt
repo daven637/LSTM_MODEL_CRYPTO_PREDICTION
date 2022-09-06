@@ -1,0 +1,528 @@
+import math
+import matplotlib.pyplot as plt
+import keras
+import pandas as pd
+import numpy as np
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
+from keras.layers import Dropout
+from keras.layers import *
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
+from keras.callbacks import EarlyStopping
+import pandas_datareader as web
+from keras.models import load_model
+import datetime as dt
+from numpy import savetxt
+def Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save):
+    #DATA_PERIOD
+    
+    TIME_END_OF_DATA=dt.datetime.now()
+    #READ_DATA
+    data = web.DataReader([CURRENCY], data_source="yahoo", start=None, end=TIME_END_OF_DATA)
+    data.reset_index(inplace=True)
+    data.head()
+    ## PREPARE DATA
+    scaler=MinMaxScaler(feature_range=(0,1))
+    scaled_data=scaler.fit_transform(data[TYPE_OF_CLOSURE].values.reshape(-1,1))
+    #PREDICTION
+    x_train=[]
+    y_train=[]
+    for x in range(prediction_days,len(scaled_data)):
+      x_train.append(scaled_data[x-prediction_days:x,0])
+      y_train.append(scaled_data[x,0])
+    x_train,y_train=np.array(x_train),np.array(y_train)
+    x_train=np.reshape(x_train,(x_train.shape[0],x_train.shape[1],1))
+    #MODEL
+    model=Sequential()
+    model.add(LSTM(units=50,return_sequences=True,input_shape=(x_train.shape[1],1)))
+    model.add(Dropout(0.2))
+    model.add(LSTM(units=50,return_sequences=True))
+    model.add(Dropout(0.2))
+    model.add(LSTM(units=50))
+    model.add(Dropout(0.2))
+    model.add(Dense(units=1))
+    #PREDICTION NEXT PRICE
+    model.compile(optimizer='adam',loss='mean_squared_error')
+    model.fit(x_train,y_train,epochs=50,batch_size=32)
+    ##TEST_MODEL_COMPARE_WITH_REAL_DATA####
+    test_end=dt.datetime.now()
+    test_data=web.DataReader([CURRENCY], data_source="yahoo",start=None,end=test_end)
+    print("ILOSC_DANYCH:",len(test_data))
+    actual_prices=test_data[TYPE_OF_CLOSURE].values
+    total_dataset=pd.concat((data[TYPE_OF_CLOSURE],test_data[TYPE_OF_CLOSURE]),axis=0)
+    model_inputs=total_dataset[len(total_dataset)-len(test_data)-prediction_days:].values
+    model_inputs=model_inputs.reshape(-1,1)
+    model_inputs=scaler.transform(model_inputs)
+    #Make prediction on test data
+    x_test=[]
+    for x in range(prediction_days,len(model_inputs)):
+        x_test.append(model_inputs[x-prediction_days:x,0])
+    x_test=np.array(x_test)
+    x_test=np.reshape(x_test,(x_test.shape[0],x_test.shape[1],1))
+    predicted_prices=model.predict(x_test)
+    predicted_prices=scaler.inverse_transform(predicted_prices)
+    real_data=[model_inputs[len(model_inputs+1)-prediction_days:len(model_inputs+1),0]]
+    real_data=np.array(real_data)
+    real_data=np.reshape(real_data,(real_data.shape[0],real_data.shape[1],1))
+    prediction=model.predict(real_data)
+    prediction=scaler.inverse_transform(prediction)
+    #COUNT ITEM
+    ITEM_COUNT=len(actual_prices)
+    LAST_ITEM=actual_prices[ITEM_COUNT -1]
+    PREDICTION_ACCURANCY=(prediction/LAST_ITEM)
+    #print(PREDICTION_ACCURANCY, file=open(save,"a"))
+    print(CURRENCY,prediction,LAST_ITEM,PREDICTION_ACCURANCY, len(test_data) ,file=open(save,"a"))
+    print("PERCENT:",CURRENCY,PREDICTION_ACCURANCY)
+#######PREDICTION##################
+TYPE_OF_CLOSURE="High"
+prediction_days=5
+save="PREDICTION_High_5_14.11.21.txt"
+##########################################################################
+CURRENCY="1INCH-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#2
+CURRENCY="AAVE-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#3
+CURRENCY="ADA-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#4
+CURRENCY="ALGO-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#5
+CURRENCY="AMP1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#6
+CURRENCY="ANKR-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#7
+CURRENCY="ATOM1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#8
+CURRENCY="BAND-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#9
+CURRENCY="BAT-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#10
+CURRENCY="BCH-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#11
+CURRENCY="BNT-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#12
+CURRENCY="BTC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#13
+CURRENCY="CELO-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#14
+CURRENCY="COMP-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#15
+CURRENCY="CRV-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#16
+CURRENCY="CTSI-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#17
+CURRENCY="DOGE-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#18
+CURRENCY="DOT1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#19
+CURRENCY="ENJ-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#20
+CURRENCY="EOS-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#21
+CURRENCY="ETH-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#22
+CURRENCY="FIL-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#23
+CURRENCY="ICP1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#24
+CURRENCY="KNC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#25
+CURRENCY="LRC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#26
+CURRENCY="MANA-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#27
+CURRENCY="MATIC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#28
+CURRENCY="MIR-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#29
+CURRENCY="NKN-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#30
+CURRENCY="OMG-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#31
+CURRENCY="NMR-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+
+#32
+CURRENCY="NU-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#33
+CURRENCY="OMG-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#34
+CURRENCY="OXT-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#35
+CURRENCY="RLC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#36
+CURRENCY="SKL-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#37
+CURRENCY="SNX-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#38
+CURRENCY="SOL1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#39
+CURRENCY="STORJ-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#40
+CURRENCY="SUSHI-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#41
+CURRENCY="TRX-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#42
+CURRENCY="UMA-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#43
+CURRENCY="UNI3-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#44
+CURRENCY="XLM-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#45
+CURRENCY="XRP-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#46
+CURRENCY="YFI-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#47
+CURRENCY="ZRX-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+
+
+
+#####################
+#######PREDICTION 14.11.21 15 dni##################
+TYPE_OF_CLOSURE="Cl"
+prediction_days=15
+save="PREDICTION_Close_15_14.11.21.txt"
+##########################################################################
+CURRENCY="1INCH-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#2
+CURRENCY="AAVE-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#3
+CURRENCY="ADA-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#4
+CURRENCY="ALGO-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#5
+CURRENCY="AMP1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#6
+CURRENCY="ANKR-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#7
+CURRENCY="ATOM1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#8
+CURRENCY="BAND-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#9
+CURRENCY="BAT-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#10
+CURRENCY="BCH-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#11
+CURRENCY="BNT-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#12
+CURRENCY="BTC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#13
+CURRENCY="CELO-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#14
+CURRENCY="COMP-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#15
+CURRENCY="CRV-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#16
+CURRENCY="CTSI-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#17
+CURRENCY="DOGE-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#18
+CURRENCY="DOT1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#19
+CURRENCY="ENJ-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#20
+CURRENCY="EOS-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#21
+CURRENCY="ETH-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#22
+CURRENCY="FIL-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#23
+CURRENCY="ICP1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#24
+CURRENCY="KNC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#25
+CURRENCY="LRC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#26
+CURRENCY="MANA-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#27
+CURRENCY="MATIC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#28
+CURRENCY="MIR-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#29
+CURRENCY="NKN-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#30
+CURRENCY="OMG-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#31
+CURRENCY="NMR-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+
+#32
+CURRENCY="NU-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#33
+CURRENCY="OMG-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#34
+CURRENCY="OXT-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#35
+CURRENCY="RLC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#36
+CURRENCY="SKL-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#37
+CURRENCY="SNX-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#38
+CURRENCY="SOL1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#39
+CURRENCY="STORJ-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#40
+CURRENCY="SUSHI-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#41
+CURRENCY="TRX-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#42
+CURRENCY="UMA-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#43
+CURRENCY="UNI3-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#44
+CURRENCY="XLM-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#45
+CURRENCY="XRP-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#46
+CURRENCY="YFI-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#47
+CURRENCY="ZRX-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+
+
+
+###################################################################
+
+#####################
+#######PREDICTION 14.11.21 15 dni##################
+TYPE_OF_CLOSURE="Cse"
+prediction_days=30
+save="PREDICTION_Close_30_14.11.21.txt"
+##########################################################################
+CURRENCY="1INCH-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#2
+CURRENCY="AAVE-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#3
+CURRENCY="ADA-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#4
+CURRENCY="ALGO-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#5
+CURRENCY="AMP1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#6
+CURRENCY="ANKR-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#7
+CURRENCY="ATOM1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#8
+CURRENCY="BAND-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#9
+CURRENCY="BAT-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#10
+CURRENCY="BCH-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#11
+CURRENCY="BNT-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#12
+CURRENCY="BTC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#13
+CURRENCY="CELO-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#14
+CURRENCY="COMP-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#15
+CURRENCY="CRV-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#16
+CURRENCY="CTSI-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#17
+CURRENCY="DOGE-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#18
+CURRENCY="DOT1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#19
+CURRENCY="ENJ-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#20
+CURRENCY="EOS-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#21
+CURRENCY="ETH-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#22
+CURRENCY="FIL-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#23
+CURRENCY="ICP1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#24
+CURRENCY="KNC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#25
+CURRENCY="LRC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#26
+CURRENCY="MANA-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#27
+CURRENCY="MATIC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#28
+CURRENCY="MIR-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#29
+CURRENCY="NKN-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#30
+CURRENCY="OMG-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#31
+CURRENCY="NMR-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+
+#32
+CURRENCY="NU-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#33
+CURRENCY="OMG-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#34
+CURRENCY="OXT-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#35
+CURRENCY="RLC-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#36
+CURRENCY="SKL-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#37
+CURRENCY="SNX-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#38
+CURRENCY="SOL1-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#39
+CURRENCY="STORJ-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#40
+CURRENCY="SUSHI-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#41
+CURRENCY="TRX-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#42
+CURRENCY="UMA-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#43
+CURRENCY="UNI3-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#44
+CURRENCY="XLM-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#45
+CURRENCY="XRP-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#46
+CURRENCY="YFI-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+#47
+CURRENCY="ZRX-USD"
+Algorytm(CURRENCY,prediction_days,TYPE_OF_CLOSURE,save)
+
